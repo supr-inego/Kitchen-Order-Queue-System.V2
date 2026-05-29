@@ -11,7 +11,7 @@ const SUGGESTIONS = [
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'bot', text: "Hi! I'm KitchenBot 🤖 Ask me about orders, menu items, or anything kitchen-related!" }
+    { role: 'bot', text: "Hi! I'm KitchenBot. Ask me about orders, menu items, or anything kitchen-related." }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,31 +32,31 @@ export default function Chatbot() {
       setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
     } catch {
       setMessages(prev => [...prev, { role: 'bot', text: 'Sorry, something went wrong. Please try again.' }]);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <>
-      {/* FAB button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white text-2xl shadow-lg shadow-brand-500/30 transition-all active:scale-95 z-40 flex items-center justify-center">
-        {open ? '✕' : '🤖'}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white text-xl shadow-lg shadow-brand-500/30 transition-all active:scale-95 z-40 flex items-center justify-center"
+        aria-label={open ? 'Close KitchenBot' : 'Open KitchenBot'}
+      >
+        {open ? 'x' : '?'}
       </button>
 
-      {/* Chat window */}
       {open && (
         <div className="fixed bottom-24 right-6 w-80 max-h-[70vh] flex flex-col bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-40 overflow-hidden">
-          {/* Header */}
           <div className="bg-brand-500/20 border-b border-white/10 px-4 py-3 flex items-center gap-2">
-            <span className="text-lg">🤖</span>
+            <span className="text-sm font-semibold text-white/80">KB</span>
             <div>
               <div className="text-white font-display font-semibold text-sm">KitchenBot</div>
-              <div className="text-white/40 text-xs">Powered by Ollama</div>
+              <div className="text-white/40 text-xs">Live order assistant</div>
             </div>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -83,7 +83,6 @@ export default function Chatbot() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Suggestions (only at start) */}
           {messages.length === 1 && (
             <div className="px-3 pb-2 flex flex-wrap gap-1">
               {SUGGESTIONS.map(s => (
@@ -95,7 +94,6 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Input */}
           <div className="p-3 border-t border-white/10 flex gap-2">
             <input
               className="input text-sm flex-1 py-2"
@@ -106,7 +104,7 @@ export default function Chatbot() {
             />
             <button onClick={() => send()} disabled={loading || !input.trim()}
               className="btn-primary px-3 py-2 text-sm disabled:opacity-50">
-              ↑
+              Send
             </button>
           </div>
         </div>

@@ -313,7 +313,7 @@ def dashboard_stats(request):
         'total_customers': Customer.objects.count(),
     })
 
-# --- Ollama Chatbot ---
+# --- Chatbot ---
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def chatbot(request):
@@ -321,44 +321,74 @@ def chatbot(request):
     if not message:
         return Response({'error': 'No message'}, status=400)
 
-    # Build context
     pending = Order.objects.filter(status__in=['pending','preparing']).count()
     ready = Order.objects.filter(status='ready').count()
+    available_products = Product.objects.filter(is_available=True).select_related('category').order_by('name')[:8]
 
-    # Ticket lookup
     ticket_query = None
-    words = message.lower().split()
+    words = message.lower().replace('#', ' ').split()
     for w in words:
         if w.isdigit() and len(w) == 4:
             ticket_query = w
             break
 
     order_context = ""
+    order_reply = None
     if ticket_query:
         try:
             o = Order.objects.prefetch_related('items__product').select_related('customer').get(ticket_number=ticket_query)
             items_str = ', '.join([f"{i.quantity}x {i.product.name}" for i in o.items.all()])
+            order_reply = f"Ticket #{ticket_query} is {o.status}. Items: {items_str or 'none listed'}. Total: PHP {o.total}."
             order_context = f"\nFor ticket #{ticket_query}: customer={o.customer.name if o.customer else 'N/A'}, status={o.status}, items={items_str}, total=₱{o.total}"
         except Order.DoesNotExist:
             order_context = f"\nTicket #{ticket_query} not found."
+            order_reply = f"I could not find ticket #{ticket_query}. Please double-check the 4-digit ticket number."
+
+    lower_message = message.lower()
+
+    def built_in_reply():
+        if order_reply:
+            return order_reply
+
+        if any(word in lower_message for word in ['pending', 'queue', 'preparing', 'ready', 'orders', 'order count']):
+            return f"Right now there are {pending} orders pending/preparing and {ready} orders ready for pickup. Ask me for a 4-digit ticket number for exact details."
+
+        if any(word in lower_message for word in ['menu', 'product', 'item', 'available', 'food']):
+            products = [f"{p.name} (PHP {p.price})" for p in available_products]
+            if products:
+                return "Available menu items include: " + "; ".join(products) + "."
+            return "I do not see available menu items right now, but the products page will show the latest list."
+
+        if any(word in lower_message for word in ['status', 'ticket', 'track']):
+            return f"Send me a 4-digit ticket number and I can check it. Current snapshot: {pending} pending/preparing, {ready} ready."
+
+        if any(word in lower_message for word in ['update', 'change', 'complete', 'cancel']):
+            return "Staff can update an order from the orders screen by opening the order and choosing the next status: pending, preparing, ready, completed, or cancelled."
+
+        return f"I can help with order status, ticket lookup, and menu availability. Current snapshot: {pending} pending/preparing, {ready} ready."
 
     system_prompt = f"""You are KitchenBot, a helpful assistant for a kitchen order management system.
 Current stats: {pending} orders pending/preparing, {ready} orders ready for pickup.{order_context}
 Be concise, friendly, and helpful. Answer questions about orders, menu, and kitchen operations.
 If asked about a specific ticket and you have the data, give the full details."""
 
+    if not settings.OLLAMA_BASE_URL:
+        return Response({'reply': built_in_reply()})
+
     try:
+        base_url = settings.OLLAMA_BASE_URL.rstrip('/')
         resp = requests.post(
-            'http://localhost:11434/api/generate',
-            json={'model':'llama3.2','prompt': f"{system_prompt}\n\nUser: {message}\nKitchenBot:","stream":False},
-            timeout=30
+            f'{base_url}/api/generate',
+            json={'model': settings.OLLAMA_MODEL, 'prompt': f"{system_prompt}\n\nUser: {message}\nKitchenBot:", "stream": False},
+            timeout=10
         )
         if resp.status_code == 200:
             reply = resp.json().get('response','').strip()
-            return Response({'reply': reply})
-        else:
-            return Response({'reply': f"I'm having trouble connecting to the AI model right now. There are currently {pending} orders in the queue and {ready} ready for pickup. How else can I help?"})
-    except requests.exceptions.ConnectionError:
-        return Response({'reply': f"AI model offline (start Ollama). Currently: {pending} orders in queue, {ready} ready. Ask me about a specific ticket number!"})
-    except Exception as e:
-        return Response({'reply': f"Sorry, something went wrong: {str(e)}"})
+            if reply:
+                return Response({'reply': reply})
+        return Response({'reply': built_in_reply()})
+    except requests.exceptions.RequestException:
+        return Response({'reply': built_in_reply()})
+    except Exception:
+        logger.exception('Chatbot failed')
+        return Response({'reply': built_in_reply()})

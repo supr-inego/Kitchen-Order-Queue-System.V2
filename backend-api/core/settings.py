@@ -141,6 +141,8 @@ EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@kitchenpos.com')
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', DEFAULT_FROM_EMAIL)
+OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', '')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 FRONTEND_URL = os.environ.get(
     'FRONTEND_URL',
     'https://frontend-web-jet-ten.vercel.app' if IS_RAILWAY else 'http://localhost:5173',
