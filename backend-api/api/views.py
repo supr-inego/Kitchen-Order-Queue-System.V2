@@ -63,9 +63,9 @@ class RegisterView(generics.CreateAPIView):
         send_mail(
             'Verify your Kitchen POS account',
             f'Hi {user.first_name},\n\nClick to verify: {link}',
-            'noreply@kitchenpos.com',
+            settings.DEFAULT_FROM_EMAIL,
             [user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
         print(f"\n[EMAIL] Verification link for {user.email}: {link}\n")
 
