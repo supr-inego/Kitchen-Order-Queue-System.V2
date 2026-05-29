@@ -14,7 +14,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_ROOT_URL = API_BASE_URL.replace(/\/$/, '').endsWith('/api')
+  ? API_BASE_URL.replace(/\/$/, '')
+  : `${API_BASE_URL.replace(/\/$/, '')}/api`;
 
 async function apiRequest(path, options = {}, retry = true) {
   const token = await AsyncStorage.getItem('access');
@@ -25,14 +28,14 @@ async function apiRequest(path, options = {}, retry = true) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const response = await fetch(`${API_ROOT_URL}${path}`, { ...options, headers });
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
 
   if (response.status === 401 && retry && !path.includes('/auth/')) {
     const refresh = await AsyncStorage.getItem('refresh');
     if (refresh) {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+      const refreshResponse = await fetch(`${API_ROOT_URL}/auth/refresh/`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -173,7 +176,7 @@ function DashboardScreen({ onLogout }) {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>KitchenPOS</Text>
-          <Text style={styles.muted}>{API_BASE_URL}</Text>
+          <Text style={styles.muted}>{API_ROOT_URL}</Text>
         </View>
         <TouchableOpacity onPress={logout} style={styles.ghostButton}>
           <Text style={styles.ghostText}>Logout</Text>
