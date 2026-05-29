@@ -7,6 +7,7 @@ export default function Register() {
   const [form, setForm] = useState({ email:'', first_name:'', last_name:'', password:'', password2:'' });
   const [loading, setLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [verificationUrl, setVerificationUrl] = useState('');
   const navigate = useNavigate();
 
   const set = k => e => setForm({...form, [k]: e.target.value});
@@ -17,9 +18,12 @@ export default function Register() {
     if (form.password !== form.password2) return toast.error('Passwords do not match');
     setLoading(true);
     try {
-      await api.post('/auth/register/', form);
+      const { data } = await api.post('/auth/register/', form);
       setRegisteredEmail(form.email);
-      toast.success('Account created. Please verify your email before signing in.');
+      setVerificationUrl(data.verification_url || '');
+      toast.success(data.email_sent === false
+        ? 'Account created. Open the verification link shown below.'
+        : 'Account created. Please verify your email before signing in.');
     } catch (err) {
       const errs = err.response?.data;
       if (errs) Object.values(errs).flat().forEach(m => toast.error(m));
@@ -40,9 +44,14 @@ export default function Register() {
             <div>
               <h2 className="font-display text-xl font-bold text-white">Verify your email</h2>
               <p className="text-white/45 text-sm mt-2">
-                We sent a confirmation link to <span className="text-white">{registeredEmail}</span>. Open that link first, then sign in.
+                {verificationUrl
+                  ? 'Email delivery is unavailable right now. Open the verification link below, then sign in.'
+                  : <>We sent a confirmation link to <span className="text-white">{registeredEmail}</span>. Open that link first, then sign in.</>}
               </p>
             </div>
+            {verificationUrl && (
+              <a href={verificationUrl} className="btn-primary w-full block">Verify Email</a>
+            )}
             <button onClick={() => navigate('/login')} className="btn-primary w-full">Go to Login</button>
           </div>
         ) : (

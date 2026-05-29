@@ -10,9 +10,11 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import Product, Customer, Order, OrderItem, Category
 from .serializers import *
+import logging
 import requests, json
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 # --- Custom JWT ---
 class MyTokenSerializer(TokenObtainPairSerializer):
@@ -49,7 +51,9 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         user = serializer.save()
         Customer.objects.get_or_create(
             email=user.email,
@@ -60,14 +64,31 @@ class RegisterView(generics.CreateAPIView):
         )
         token = user.verification_token
         link = f"{settings.FRONTEND_URL}/verify/{token}"
-        send_mail(
-            'Verify your Kitchen POS account',
-            f'Hi {user.first_name},\n\nClick to verify: {link}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
+        email_sent = True
+        try:
+            send_mail(
+                'Verify your Kitchen POS account',
+                f'Hi {user.first_name},\n\nClick to verify: {link}',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            email_sent = False
+            logger.exception('Verification email failed for %s', user.email)
+
         print(f"\n[EMAIL] Verification link for {user.email}: {link}\n")
+        data = {
+            'message': 'Account created. Please verify your email before signing in.',
+            'email': user.email,
+            'email_sent': email_sent,
+        }
+        if not email_sent:
+            data['message'] = 'Account created, but the verification email could not be sent.'
+            data['verification_url'] = link
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
