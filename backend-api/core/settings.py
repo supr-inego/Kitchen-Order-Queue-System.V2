@@ -19,8 +19,23 @@ if env_path.exists():
         os.environ.setdefault(key.strip(), value.strip())
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-kitchen-pos-secret-key-change-in-production')
-DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
+DEBUG = os.environ.get('DJANGO_DEBUG', '0' if IS_RAILWAY else '1') == '1'
+
+default_allowed_hosts = [
+    'localhost',
+    '127.0.0.1',
+    '.up.railway.app',
+    'crammers-data-production.up.railway.app',
+]
+if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
+    default_allowed_hosts.append(os.environ['RAILWAY_PUBLIC_DOMAIN'])
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', ','.join(default_allowed_hosts)).split(',')
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -77,17 +92,27 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
+default_frontend_origins = [
+    'http://localhost:5173',
+    'https://frontend-web-jet-ten.vercel.app',
+    'https://frontend-web-supr-inegos-projects.vercel.app',
+    'https://frontend-web-supr-inego-supr-inegos-projects.vercel.app',
+]
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', str(DEBUG)).lower() == 'true'
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', ','.join(default_frontend_origins)).split(',')
     if origin.strip()
 ]
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', ','.join(default_frontend_origins)).split(',')
     if origin.strip()
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.*\.vercel\.app$',
+]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Manila'
@@ -110,4 +135,7 @@ EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@kitchenpos.com')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.environ.get(
+    'FRONTEND_URL',
+    'https://frontend-web-jet-ten.vercel.app' if IS_RAILWAY else 'http://localhost:5173',
+)
