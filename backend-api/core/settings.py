@@ -139,6 +139,8 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@kitchenpos.com')
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', DEFAULT_FROM_EMAIL)
 FRONTEND_URL = os.environ.get(
     'FRONTEND_URL',
     'https://frontend-web-jet-ten.vercel.app' if IS_RAILWAY else 'http://localhost:5173',

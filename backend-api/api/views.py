@@ -16,6 +16,42 @@ import requests, json
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+def send_verification_email(user, link):
+    subject = 'Verify your Kitchen POS account'
+    text = f'Hi {user.first_name},\n\nClick to verify: {link}'
+    html = (
+        f'<p>Hi {user.first_name},</p>'
+        f'<p>Click this link to verify your Kitchen POS account:</p>'
+        f'<p><a href="{link}">{link}</a></p>'
+    )
+
+    if settings.RESEND_API_KEY:
+        response = requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {settings.RESEND_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': settings.RESEND_FROM_EMAIL,
+                'to': [user.email],
+                'subject': subject,
+                'html': html,
+                'text': text,
+            },
+            timeout=settings.EMAIL_TIMEOUT,
+        )
+        response.raise_for_status()
+        return
+
+    send_mail(
+        subject,
+        text,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=False,
+    )
+
 # --- Custom JWT ---
 class MyTokenSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -66,13 +102,7 @@ class RegisterView(generics.CreateAPIView):
         link = f"{settings.FRONTEND_URL}/verify/{token}"
         email_sent = True
         try:
-            send_mail(
-                'Verify your Kitchen POS account',
-                f'Hi {user.first_name},\n\nClick to verify: {link}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
+            send_verification_email(user, link)
         except Exception:
             email_sent = False
             logger.exception('Verification email failed for %s', user.email)
