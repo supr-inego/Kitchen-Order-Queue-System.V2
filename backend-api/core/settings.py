@@ -31,11 +31,12 @@ default_allowed_hosts = [
 if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
     default_allowed_hosts.append(os.environ['RAILWAY_PUBLIC_DOMAIN'])
 
-ALLOWED_HOSTS = [
+configured_allowed_hosts = [
     host.strip()
-    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', ','.join(default_allowed_hosts)).split(',')
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
     if host.strip()
 ]
+ALLOWED_HOSTS = list(dict.fromkeys(configured_allowed_hosts + default_allowed_hosts))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -99,16 +100,18 @@ default_frontend_origins = [
     'https://frontend-web-supr-inego-supr-inegos-projects.vercel.app',
 ]
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', str(DEBUG)).lower() == 'true'
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = default_frontend_origins + [
     origin.strip()
-    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', ','.join(default_frontend_origins)).split(',')
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
     if origin.strip()
 ]
-CSRF_TRUSTED_ORIGINS = [
+CSRF_TRUSTED_ORIGINS = default_frontend_origins + [
     origin.strip()
-    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', ','.join(default_frontend_origins)).split(',')
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys(CORS_ALLOWED_ORIGINS))
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://.*\.vercel\.app$',
 ]
