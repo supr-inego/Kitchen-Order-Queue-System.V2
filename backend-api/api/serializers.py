@@ -1,6 +1,13 @@
 from rest_framework import serializers
 from .models import User, Product, Customer, Order, OrderItem, Category
 from django.contrib.auth.password_validation import validate_password
+import base64
+
+def image_data_url(data, content_type):
+    if not data:
+        return None
+    encoded = base64.b64encode(bytes(data)).decode('ascii')
+    return f"data:{content_type or 'image/jpeg'};base64,{encoded}"
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -31,6 +38,8 @@ class UserSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}"
 
     def get_avatar_url(self, obj):
+        if obj.avatar_data:
+            return image_data_url(obj.avatar_data, obj.avatar_content_type)
         if obj.avatar:
             request = self.context.get('request')
             return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
@@ -49,6 +58,8 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_image_url(self, obj):
+        if obj.image_data:
+            return image_data_url(obj.image_data, obj.image_content_type)
         if obj.image:
             request = self.context.get('request')
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url

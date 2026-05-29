@@ -16,6 +16,13 @@ import requests, json
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+def persist_uploaded_image(instance, field_name, upload):
+    if not upload:
+        return
+    setattr(instance, f'{field_name}_data', upload.read())
+    setattr(instance, f'{field_name}_content_type', upload.content_type or 'image/jpeg')
+    instance.save(update_fields=[f'{field_name}_data', f'{field_name}_content_type'])
+
 def send_verification_email(user, link):
     subject = 'Verify your Kitchen POS account'
     text = f'Hi {user.first_name},\n\nClick to verify: {link}'
@@ -139,6 +146,10 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+    def perform_update(self, serializer):
+        user = serializer.save()
+        persist_uploaded_image(user, 'avatar', self.request.FILES.get('avatar'))
+
 # --- Admin: Users ---
 class IsAdminUser(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -191,6 +202,14 @@ class ProductViewSet(viewsets.ModelViewSet):
         ctx = super().get_serializer_context()
         ctx['request'] = self.request
         return ctx
+
+    def perform_create(self, serializer):
+        product = serializer.save()
+        persist_uploaded_image(product, 'image', self.request.FILES.get('image'))
+
+    def perform_update(self, serializer):
+        product = serializer.save()
+        persist_uploaded_image(product, 'image', self.request.FILES.get('image'))
 
 # --- Customers ---
 class CustomerViewSet(viewsets.ModelViewSet):

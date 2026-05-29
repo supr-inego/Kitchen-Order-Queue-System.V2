@@ -28,6 +28,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=100)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    avatar_data = models.BinaryField(null=True, blank=True)
+    avatar_content_type = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -52,6 +54,8 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     image = models.ImageField(upload_to='products/', null=True, blank=True)
+    image_data = models.BinaryField(null=True, blank=True)
+    image_content_type = models.CharField(max_length=100, blank=True)
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
