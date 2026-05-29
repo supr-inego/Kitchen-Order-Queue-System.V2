@@ -1,166 +1,113 @@
-# 🍽️ KitchenPOS — Full-Stack Order Management System
+# KitchenPOS Unified System
 
-A complete kitchen order queue system built with Django REST Framework + React, satisfying all PIT requirements.
+KitchenPOS is split into three independent deployable modules that share one backend API and one database.
 
----
+```text
+kitchen-system/
+├── backend-api/     # Django REST API, database owner, Railway target
+├── frontend-web/    # React + Vite web app, Vercel target
+└── mobile-app/      # Expo React Native app, Android APK target
+```
 
-## ✅ PIT Requirements Checklist
+## Architecture Rules
 
-| # | Requirement | Status | Implementation |
-|---|---|---|---|
-| 1 | Web & Mobile API Communication | ✅ | DRF REST API — consumed by React web app; same API works for mobile |
-| 2 | CRUD Operations | ✅ | Orders, Products, Customers, Users — full CRUD |
-| 3 | Authentication System | ✅ | JWT login/register with djangorestframework-simplejwt |
-| 4 | Email Activation / Verification | ✅ | Verification email sent on register; `/verify/<token>/` endpoint |
-| 5 | Input Validations | ✅ | DRF serializer validation (backend) + form validation (frontend) |
-| 6 | Chatbot Integration | ✅ | Ollama (llama3.2) chatbot with live order context |
-| 7 | Role-Based Access Control | ✅ | Admin / Staff / Customer roles with protected routes & endpoints |
-| 8 | Dashboard & Profile | ✅ | Stats dashboard with charts + full profile with avatar upload |
-| 9 | File / Image Upload | ✅ | Product images + user avatars via Django MEDIA_ROOT |
-| 10 | Responsive UI | ✅ | Tailwind CSS responsive layout |
+- `backend-api` is the single source of truth for authentication, validation, roles, orders, products, customers, queue state, and chatbot data.
+- `frontend-web` and `mobile-app` never connect to the database directly.
+- Web and mobile both call the same REST API and receive the same validation and business rules.
+- Each module has its own dependencies and env files so it can be moved into a separate repository later.
 
----
+## Local Development
 
-## 🏗️ Tech Stack
-
-**Backend**
-- Django 4.2 + Django REST Framework
-- JWT Authentication (djangorestframework-simplejwt)
-- SQLite (swap to PostgreSQL for production)
-- Pillow (image uploads)
-
-**Frontend**
-- React 18 + Vite
-- Tailwind CSS
-- React Router DOM
-- Axios (with JWT refresh interceptor)
-- Recharts (dashboard charts)
-- React Hot Toast
-
-**Chatbot**
-- Ollama (local LLM — llama3.2)
-- Contextual: reads live order counts from the database
-
----
-
-## 🚀 Quick Start
-
-### 1. Backend Setup
+### Backend API
 
 ```bash
-cd backend
+cd backend-api
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python seed.py             # Creates demo data
+python seed.py
 python manage.py runserver
 ```
 
-### 2. Frontend Setup
+### Web Frontend
 
 ```bash
-cd frontend
+cd frontend-web
+copy .env.example .env
 npm install
 npm run dev
 ```
 
-### 3. Ollama Chatbot Setup
+### Mobile App
 
 ```bash
-# Install Ollama from https://ollama.com
-ollama serve            # Start Ollama server
-ollama pull llama3.2    # Download model (~2GB)
+cd mobile-app
+copy .env.example .env
+npm install
+npm run start
 ```
 
-The chatbot works without Ollama too — it falls back to a helpful message showing current queue stats.
+For Android emulator local API access, set:
 
----
+```text
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8000/api
+```
 
-## 🔐 Demo Credentials
+For a physical phone, use your computer LAN IP:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8000/api
+```
+
+## Deployment
+
+### Backend API on Railway
+
+Deploy `backend-api` as the Railway service root.
+
+Required Railway variables:
+
+```text
+DJANGO_SECRET_KEY=your-production-secret
+DJANGO_DEBUG=0
+DJANGO_ALLOWED_HOSTS=your-api.up.railway.app
+DATABASE_URL=railway-postgres-url
+FRONTEND_URL=https://your-web-app.vercel.app
+CORS_ALLOW_ALL_ORIGINS=false
+CORS_ALLOWED_ORIGINS=https://your-web-app.vercel.app
+CSRF_TRUSTED_ORIGINS=https://your-web-app.vercel.app
+```
+
+Railway uses `backend-api/railway.json` and `backend-api/Procfile`.
+
+### Web on Vercel
+
+Deploy `frontend-web` as the Vercel project root.
+
+Required Vercel variable:
+
+```text
+VITE_API_BASE_URL=https://your-api.up.railway.app/api
+```
+
+### Android APK with Expo
+
+Build from `mobile-app`.
+
+```bash
+npm install -g eas-cli
+eas login
+EXPO_PUBLIC_API_BASE_URL=https://your-api.up.railway.app/api npm run build:apk
+```
+
+The mobile app is portable: move the entire `mobile-app` folder anywhere, install dependencies, set `EXPO_PUBLIC_API_BASE_URL`, and it will use the same backend API.
+
+## Demo Credentials
 
 | Role | Email | Password |
 |---|---|---|
 | Admin | admin@kitchen.com | admin123 |
 | Staff | staff@kitchen.com | staff123 |
 
----
-
-## 📱 API Endpoints
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/register/` | Public | Register + sends verification email |
-| POST | `/api/auth/login/` | Public | Returns JWT tokens |
-| POST | `/api/auth/refresh/` | Public | Refresh access token |
-| GET | `/api/auth/verify/<token>/` | Public | Verify email |
-| GET/PATCH | `/api/profile/` | Any role | User profile |
-| GET | `/api/dashboard/stats/` | Staff/Admin | Dashboard metrics |
-| GET | `/api/track/<ticket>/` | Public | Track order by ticket |
-| POST | `/api/chatbot/` | Public | Ollama chatbot |
-| CRUD | `/api/orders/` | Staff/Admin | Order management |
-| PATCH | `/api/orders/<id>/update_status/` | Staff/Admin | Update order status |
-| CRUD | `/api/products/` | Read: All, Write: Staff/Admin | Product management |
-| CRUD | `/api/customers/` | Staff/Admin | Customer management |
-| CRUD | `/api/users/` | Admin only | User management |
-| PATCH | `/api/users/<id>/set_role/` | Admin only | Change user role |
-
----
-
-## 🤖 Chatbot Features
-
-KitchenBot uses Ollama (llama3.2) locally. It:
-- Knows current pending/ready order counts
-- Can look up specific orders by 4-digit ticket number
-- Answers general kitchen/menu questions
-- Falls back gracefully if Ollama is offline
-
-**Example queries:**
-- "How many orders are pending?"
-- "What's the status of ticket 1234?"
-- "What's on the menu?"
-
----
-
-## 📂 Project Structure
-
-```
-kitchen-system/
-├── backend/
-│   ├── api/
-│   │   ├── models.py       # User, Product, Customer, Order, OrderItem
-│   │   ├── serializers.py  # DRF serializers with validation
-│   │   ├── views.py        # All API views + chatbot
-│   │   └── urls.py         # API routes
-│   ├── core/
-│   │   ├── settings.py
-│   │   └── urls.py
-│   ├── seed.py             # Demo data seeder
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── api/axios.js        # Axios + JWT interceptor
-│       ├── context/AuthContext.jsx
-│       ├── components/
-│       │   ├── Layout.jsx      # Sidebar navigation
-│       │   └── Chatbot.jsx     # Ollama chatbot widget
-│       └── pages/
-│           ├── Login.jsx
-│           ├── Register.jsx
-│           ├── Dashboard.jsx   # Stats + charts
-│           ├── Orders.jsx      # CRUD + status updates
-│           ├── Queue.jsx       # Live kitchen queue
-│           ├── Products.jsx    # CRUD + image upload
-│           ├── Customers.jsx   # CRUD
-│           ├── Profile.jsx     # Avatar + profile edit
-│           ├── Users.jsx       # Admin role management
-│           └── TrackOrder.jsx  # Public order tracking
-├── start.sh
-└── README.md
-```
-
----
-
-## 👨‍💻 Authors
-
-Built for PIT (Practical Integrative Technology) — academic use.
+Run `python seed.py` inside `backend-api` to create demo data.

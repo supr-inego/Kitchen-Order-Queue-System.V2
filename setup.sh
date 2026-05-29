@@ -7,7 +7,7 @@ echo "======================================"
 # Backend
 echo ""
 echo "1. Setting up Django backend..."
-cd backend
+cd backend-api
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -q
@@ -19,8 +19,14 @@ echo "   ✅ Backend ready"
 
 # Frontend
 echo ""
-echo "2. Setting up React frontend..."
-cd frontend
+echo "2. Setting up React web frontend..."
+cd frontend-web
+npm install --silent
+cd ..
+
+echo ""
+echo "3. Setting up Expo mobile app..."
+cd mobile-app
 npm install --silent
 cd ..
 echo "   ✅ Frontend ready"
@@ -34,8 +40,9 @@ echo "  To start the app:"
 echo "    bash start.sh"
 echo ""
 echo "  Or manually:"
-echo "    Backend:  cd backend && python manage.py runserver"
-echo "    Frontend: cd frontend && npm run dev"
+echo "    Backend:  cd backend-api && python manage.py runserver"
+echo "    Web:      cd frontend-web && npm run dev"
+echo "    Mobile:   cd mobile-app && npm run start"
 echo ""
 echo "  Demo logins:"
 echo "    Admin:  admin@kitchen.com / admin123"

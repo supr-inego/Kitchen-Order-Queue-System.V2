@@ -1,5 +1,11 @@
 from pathlib import Path
 import os
+import importlib.util
+
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,7 +20,7 @@ if env_path.exists():
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-kitchen-pos-secret-key-change-in-production')
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -39,17 +45,24 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if importlib.util.find_spec('whitenoise'):
+    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'core.urls'
 TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates','DIRS': [],'APP_DIRS': True,'OPTIONS': {'context_processors': ['django.template.context_processors.debug','django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages']}}]
 WSGI_APPLICATION = 'core.wsgi.application'
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
 DATABASES = {
-    'default': {
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    if DATABASE_URL
+    else {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+if DATABASE_URL and dj_database_url is None:
+    raise RuntimeError('Install dj-database-url to use DATABASE_URL.')
 
 AUTH_USER_MODEL = 'api.User'
 
@@ -64,7 +77,17 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', str(DEBUG)).lower() == 'true'
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Manila'
@@ -75,6 +98,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+if importlib.util.find_spec('whitenoise'):
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')

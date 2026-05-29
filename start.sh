@@ -3,7 +3,7 @@ echo "🍽️  Starting KitchenPOS..."
 
 # Start backend
 echo "▶  Starting Django backend on :8000"
-cd backend
+cd backend-api
 python manage.py runserver 0.0.0.0:8000 &
 BACKEND_PID=$!
 cd ..
@@ -12,7 +12,7 @@ sleep 2
 
 # Start frontend
 echo "▶  Starting React frontend on :5173"
-cd frontend
+cd frontend-web
 npm run dev &
 FRONTEND_PID=$!
 cd ..

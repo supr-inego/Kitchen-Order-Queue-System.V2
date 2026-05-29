@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "KitchenPOS",
+    "slug": "kitchenpos-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.kitchenpos.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0f0f"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "Set EXPO_PUBLIC_API_BASE_URL in your environment"
+    }
+  }
+}

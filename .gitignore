@@ -1,4 +1,5 @@
 # Backend
+backend/
 backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
@@ -6,11 +7,28 @@ backend/db.sqlite3
 backend/media/
 backend/.env
 backend/staticfiles/
+backend-api/.venv/
+backend-api/__pycache__/
+backend-api/**/__pycache__/
+backend-api/db.sqlite3
+backend-api/media/
+backend-api/.env
+backend-api/staticfiles/
 
 # Frontend
+frontend/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+frontend-web/node_modules/
+frontend-web/dist/
+frontend-web/.env
+
+# Mobile
+mobile-app/node_modules/
+mobile-app/.expo/
+mobile-app/dist/
+mobile-app/.env
 
 # OS
 .DS_Store
