@@ -240,6 +240,12 @@ class CustomerViewSet(viewsets.ModelViewSet):
                     customer.save()
         return Customer.objects.all().order_by('-created_at')
 
+    def perform_destroy(self, instance):
+        linked_account = User.objects.filter(email=instance.email, role='customer').first() if instance.email else None
+        instance.delete()
+        if linked_account:
+            linked_account.delete()
+
 # --- Orders ---
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().select_related('customer','staff').prefetch_related('items__product')

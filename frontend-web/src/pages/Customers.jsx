@@ -67,9 +67,13 @@ export default function Customers() {
 
   async function del(customer) {
     if (!confirm(`Delete "${customer.name}"?`)) return;
-    await api.delete(`/customers/${customer.id}/`);
-    toast.success('Customer deleted');
-    load();
+    try {
+      await api.delete(`/customers/${customer.id}/`);
+      toast.success('Customer deleted');
+      load();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Delete failed');
+    }
   }
 
   const filtered = customers.filter(customer => {
