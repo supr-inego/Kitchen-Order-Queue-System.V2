@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 def persist_uploaded_image(instance, field_name, upload):
     if not upload:
         return
+    upload.seek(0)
     setattr(instance, f'{field_name}_data', upload.read())
     setattr(instance, f'{field_name}_content_type', upload.content_type or 'image/jpeg')
     instance.save(update_fields=[f'{field_name}_data', f'{field_name}_content_type'])
