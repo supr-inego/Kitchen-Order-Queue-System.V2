@@ -21,13 +21,20 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id','email','first_name','last_name','full_name','role','avatar','phone','is_verified','created_at']
+        fields = ['id','email','first_name','last_name','full_name','role','avatar','avatar_url','phone','is_verified','created_at']
         read_only_fields = ['id','email','role','is_verified','created_at']
 
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
+
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
+        return None
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

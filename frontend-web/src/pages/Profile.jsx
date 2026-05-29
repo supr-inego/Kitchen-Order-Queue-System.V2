@@ -17,7 +17,9 @@ export default function Profile() {
         last_name: response.data.last_name,
         phone: response.data.phone || '',
       });
-      if (response.data.avatar) setPreview(response.data.avatar);
+      if (response.data.avatar_url || response.data.avatar) {
+        setPreview(response.data.avatar_url || response.data.avatar);
+      }
     });
   }, []);
 
@@ -39,6 +41,10 @@ export default function Profile() {
     try {
       const { data: nextData } = await api.patch('/profile/', payload);
       setData(nextData);
+      if (nextData.avatar_url || nextData.avatar) {
+        setPreview(nextData.avatar_url || nextData.avatar);
+        setAvatar(null);
+      }
       toast.success('Profile updated');
     } catch {
       toast.error('Update failed');
