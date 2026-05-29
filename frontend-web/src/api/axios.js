@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const API_ROOT_URL = API_BASE_URL.replace(/\/$/, '').endsWith('/api')
+  ? API_BASE_URL.replace(/\/$/, '')
+  : `${API_BASE_URL.replace(/\/$/, '')}/api`;
 
-const api = axios.create({ baseURL: API_BASE_URL });
+const api = axios.create({ baseURL: API_ROOT_URL });
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('access');
@@ -26,7 +29,7 @@ api.interceptors.response.use(
 
       err.config._retry = true;
       try {
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh });
+        const { data } = await axios.post(`${API_ROOT_URL}/auth/refresh/`, { refresh });
         localStorage.setItem('access', data.access);
         err.config.headers.Authorization = `Bearer ${data.access}`;
         return api(err.config);
